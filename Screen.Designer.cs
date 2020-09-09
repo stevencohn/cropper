@@ -29,85 +29,84 @@
         private void InitializeComponent()
         {
 			this.components = new System.ComponentModel.Container();
-			this.Picture = new System.Windows.Forms.PictureBox();
-			this.LoadImage = new System.Windows.Forms.Button();
-			this.AntTimer = new System.Windows.Forms.Timer(this.components);
-			this.panel1 = new System.Windows.Forms.Panel();
-			this.panel2 = new System.Windows.Forms.Panel();
-			this.CropButton = new System.Windows.Forms.Button();
+			this.pictureBox = new System.Windows.Forms.PictureBox();
+			this.loadButton = new System.Windows.Forms.Button();
+			this.marchingTimer = new System.Windows.Forms.Timer(this.components);
+			this.picturePanel = new System.Windows.Forms.Panel();
+			this.buttonPanel = new System.Windows.Forms.Panel();
+			this.cropButton = new System.Windows.Forms.Button();
 			this.statusStrip = new System.Windows.Forms.StatusStrip();
 			this.sizeStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
-			((System.ComponentModel.ISupportInitialize)(this.Picture)).BeginInit();
-			this.panel1.SuspendLayout();
-			this.panel2.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.pictureBox)).BeginInit();
+			this.picturePanel.SuspendLayout();
+			this.buttonPanel.SuspendLayout();
 			this.statusStrip.SuspendLayout();
 			this.SuspendLayout();
 			// 
-			// Picture
+			// pictureBox
 			// 
-			this.Picture.BackColor = System.Drawing.SystemColors.ControlDarkDark;
-			this.Picture.Cursor = System.Windows.Forms.Cursors.Cross;
-			this.Picture.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.Picture.Location = new System.Drawing.Point(10, 10);
-			this.Picture.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-			this.Picture.Name = "Picture";
-			this.Picture.Size = new System.Drawing.Size(1104, 647);
-			this.Picture.TabIndex = 1;
-			this.Picture.TabStop = false;
-			this.Picture.Paint += new System.Windows.Forms.PaintEventHandler(this.Picture_Paint);
-			this.Picture.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Picture_MouseDown);
-			this.Picture.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Picture_MouseMove);
-			this.Picture.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Picture_MouseUp);
+			this.pictureBox.BackColor = System.Drawing.SystemColors.ControlDarkDark;
+			this.pictureBox.Cursor = System.Windows.Forms.Cursors.Cross;
+			this.pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.pictureBox.Location = new System.Drawing.Point(10, 10);
+			this.pictureBox.Name = "pictureBox";
+			this.pictureBox.Size = new System.Drawing.Size(958, 629);
+			this.pictureBox.TabIndex = 1;
+			this.pictureBox.TabStop = false;
+			this.pictureBox.Paint += new System.Windows.Forms.PaintEventHandler(this.Picture_Paint);
+			this.pictureBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Picture_MouseDown);
+			this.pictureBox.MouseHover += new System.EventHandler(this.Picture_Hover);
+			this.pictureBox.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Picture_MouseMove);
+			this.pictureBox.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Picture_MouseUp);
 			// 
-			// LoadImage
+			// loadButton
 			// 
-			this.LoadImage.Location = new System.Drawing.Point(4, 8);
-			this.LoadImage.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-			this.LoadImage.Name = "LoadImage";
-			this.LoadImage.Size = new System.Drawing.Size(142, 40);
-			this.LoadImage.TabIndex = 4;
-			this.LoadImage.Text = "Load Image";
-			this.LoadImage.UseVisualStyleBackColor = true;
-			this.LoadImage.Click += new System.EventHandler(this.LoadImage_Click);
+			this.loadButton.Location = new System.Drawing.Point(4, 8);
+			this.loadButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+			this.loadButton.Name = "loadButton";
+			this.loadButton.Size = new System.Drawing.Size(142, 40);
+			this.loadButton.TabIndex = 4;
+			this.loadButton.Text = "Load Image";
+			this.loadButton.UseVisualStyleBackColor = true;
+			this.loadButton.Click += new System.EventHandler(this.LoadImage_Click);
 			// 
-			// AntTimer
+			// marchingTimer
 			// 
-			this.AntTimer.Interval = 50;
-			this.AntTimer.Tick += new System.EventHandler(this.AntTimer_Tick);
+			this.marchingTimer.Interval = 50;
+			this.marchingTimer.Tick += new System.EventHandler(this.MarchingTimer_Tick);
 			// 
-			// panel1
+			// picturePanel
 			// 
-			this.panel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.panel1.Controls.Add(this.Picture);
-			this.panel1.Location = new System.Drawing.Point(12, 77);
-			this.panel1.Name = "panel1";
-			this.panel1.Padding = new System.Windows.Forms.Padding(10);
-			this.panel1.Size = new System.Drawing.Size(1124, 667);
-			this.panel1.TabIndex = 5;
+			this.picturePanel.AutoScroll = true;
+			this.picturePanel.AutoScrollMinSize = new System.Drawing.Size(300, 300);
+			this.picturePanel.AutoSize = true;
+			this.picturePanel.Controls.Add(this.pictureBox);
+			this.picturePanel.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.picturePanel.Location = new System.Drawing.Point(0, 59);
+			this.picturePanel.Name = "picturePanel";
+			this.picturePanel.Size = new System.Drawing.Size(978, 649);
+			this.picturePanel.TabIndex = 5;
 			// 
-			// panel2
+			// buttonPanel
 			// 
-			this.panel2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.panel2.Controls.Add(this.CropButton);
-			this.panel2.Controls.Add(this.LoadImage);
-			this.panel2.Location = new System.Drawing.Point(12, 12);
-			this.panel2.Name = "panel2";
-			this.panel2.Size = new System.Drawing.Size(1124, 59);
-			this.panel2.TabIndex = 6;
+			this.buttonPanel.Controls.Add(this.cropButton);
+			this.buttonPanel.Controls.Add(this.loadButton);
+			this.buttonPanel.Dock = System.Windows.Forms.DockStyle.Top;
+			this.buttonPanel.Location = new System.Drawing.Point(0, 0);
+			this.buttonPanel.Name = "buttonPanel";
+			this.buttonPanel.Size = new System.Drawing.Size(978, 59);
+			this.buttonPanel.TabIndex = 6;
 			// 
-			// CropButton
+			// cropButton
 			// 
-			this.CropButton.Location = new System.Drawing.Point(153, 8);
-			this.CropButton.Name = "CropButton";
-			this.CropButton.Size = new System.Drawing.Size(142, 40);
-			this.CropButton.TabIndex = 5;
-			this.CropButton.Text = "Crop";
-			this.CropButton.UseVisualStyleBackColor = true;
-			this.CropButton.Click += new System.EventHandler(this.CropButton_Click);
+			this.cropButton.Location = new System.Drawing.Point(153, 8);
+			this.cropButton.Name = "cropButton";
+			this.cropButton.Size = new System.Drawing.Size(142, 40);
+			this.cropButton.TabIndex = 5;
+			this.cropButton.Text = "Crop";
+			this.cropButton.UseVisualStyleBackColor = true;
+			this.cropButton.Click += new System.EventHandler(this.CropButton_Click);
 			// 
 			// statusStrip
 			// 
@@ -115,9 +114,9 @@
 			this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sizeStatusLabel,
             this.statusLabel});
-			this.statusStrip.Location = new System.Drawing.Point(0, 733);
+			this.statusStrip.Location = new System.Drawing.Point(0, 708);
 			this.statusStrip.Name = "statusStrip";
-			this.statusStrip.Size = new System.Drawing.Size(1148, 36);
+			this.statusStrip.Size = new System.Drawing.Size(978, 36);
 			this.statusStrip.TabIndex = 7;
 			// 
 			// sizeStatusLabel
@@ -140,15 +139,15 @@
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(1148, 769);
+			this.ClientSize = new System.Drawing.Size(978, 744);
+			this.Controls.Add(this.picturePanel);
 			this.Controls.Add(this.statusStrip);
-			this.Controls.Add(this.panel2);
-			this.Controls.Add(this.panel1);
+			this.Controls.Add(this.buttonPanel);
 			this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.Name = "Screen";
-			((System.ComponentModel.ISupportInitialize)(this.Picture)).EndInit();
-			this.panel1.ResumeLayout(false);
-			this.panel2.ResumeLayout(false);
+			((System.ComponentModel.ISupportInitialize)(this.pictureBox)).EndInit();
+			this.picturePanel.ResumeLayout(false);
+			this.buttonPanel.ResumeLayout(false);
 			this.statusStrip.ResumeLayout(false);
 			this.statusStrip.PerformLayout();
 			this.ResumeLayout(false);
@@ -158,12 +157,12 @@
 
         #endregion
 
-        private System.Windows.Forms.PictureBox Picture;
-        private System.Windows.Forms.Button LoadImage;
-        private System.Windows.Forms.Timer AntTimer;
-		private System.Windows.Forms.Panel panel1;
-		private System.Windows.Forms.Panel panel2;
-		private System.Windows.Forms.Button CropButton;
+        private System.Windows.Forms.PictureBox pictureBox;
+        private System.Windows.Forms.Button loadButton;
+        private System.Windows.Forms.Timer marchingTimer;
+		private System.Windows.Forms.Panel picturePanel;
+		private System.Windows.Forms.Panel buttonPanel;
+		private System.Windows.Forms.Button cropButton;
 		private System.Windows.Forms.StatusStrip statusStrip;
 		private System.Windows.Forms.ToolStripStatusLabel statusLabel;
 		private System.Windows.Forms.ToolStripStatusLabel sizeStatusLabel;
