@@ -34,6 +34,7 @@ namespace Cropper
 
 		private Point startPoint;
 		private Point endPoint;
+		private Point movePoint;
 		private Rectangle selectionBounds;
 		private readonly Region selectionRegion;
 		private readonly GraphicsPath selectionPath;
@@ -41,8 +42,8 @@ namespace Cropper
 
 		private Image image;
 		private Rectangle imageBounds;
-		private List<SelectionHandle> handles;
 		private SelectionHandle currentHandle;
+		private readonly List<SelectionHandle> handles;
 
 		private int antOffset;
 		private MoveState moveState;
@@ -63,7 +64,8 @@ namespace Cropper
 
 			// temp
 			image = Image.FromFile(@"C:\Github\OneMore\Screenshots\CodeBox.jpg");
-			imageBounds = new Rectangle(ImageLeft, ImageTop, image.Width + ImageLeft, image.Height + ImageTop);
+			imageBounds = new Rectangle(ImageLeft, ImageTop, image.Width, image.Height);
+			sizeStatusLabel.Text = $"Image size: {imageBounds.Width} x {imageBounds.Height}.";
 		}
 
 		private void LoadImage_Click(object sender, EventArgs e)
@@ -72,7 +74,8 @@ namespace Cropper
 			if (dialog.ShowDialog() == DialogResult.OK)
 			{
 				image = Image.FromFile(dialog.FileName);
-				imageBounds = new Rectangle(ImageLeft, ImageTop, image.Width + ImageLeft, image.Height + ImageTop);
+				imageBounds = new Rectangle(ImageLeft, ImageTop, image.Width, image.Height);
+				sizeStatusLabel.Text = $"Image size: {imageBounds.Width} x {imageBounds.Height}.";
 			}
 
 			Picture.Refresh();
@@ -81,6 +84,8 @@ namespace Cropper
 		#region Paint
 		private void Picture_Paint(object sender, PaintEventArgs e)
 		{
+			handles.Clear();
+
 			e.Graphics.DrawImageUnscaled(background, 0, 0);
 
 			if (image != null)
@@ -90,6 +95,7 @@ namespace Cropper
 
 			if (selectionRegion.IsEmpty(e.Graphics))
 			{
+				statusLabel.Text = string.Empty;
 				return;
 			}
 
@@ -131,8 +137,6 @@ namespace Cropper
 
 				var bounds = selectionRegion.GetBounds(e.Graphics);
 
-				handles.Clear();
-
 				AddHandle(HandlePosition.TopLeft, bounds.Left, bounds.Top, e.Graphics);
 				AddHandle(HandlePosition.TopRight, bounds.Right, bounds.Top, e.Graphics);
 				AddHandle(HandlePosition.BottomRight, bounds.Right, bounds.Bottom, e.Graphics);
@@ -143,6 +147,10 @@ namespace Cropper
 				AddHandle(HandlePosition.Bottom, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Bottom, e.Graphics);
 				AddHandle(HandlePosition.Left, bounds.Left, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), e.Graphics);
 			}
+
+			statusLabel.Text = 
+				$"Selection top left: {selectionBounds.X - ImageLeft}, {selectionBounds.Y - ImageTop}. " +
+				$"Bounding rectangle size: {selectionBounds.Width} x {selectionBounds.Height}.";
 		}
 
 		private void AddHandle(HandlePosition position, float x, float y, Graphics g)
@@ -223,6 +231,13 @@ namespace Cropper
 				return;
 			}
 
+			if (selectionBounds.Contains(e.Location))
+			{
+				movePoint = e.Location;
+				moveState = MoveState.Moving;
+				return;
+			}
+
 			// else starting a new region
 			if (imageBounds.Contains(e.Location))
 			{
@@ -269,6 +284,10 @@ namespace Cropper
 			{
 				ResizeRegion(e.Location);
 			}
+			else if (moveState == MoveState.Moving)
+			{
+				MoveRegion(e.Location);
+			}
 			else
 			{
 				var handle = HitHandle(e.Location);
@@ -278,13 +297,19 @@ namespace Cropper
 					return;
 				}
 
+				if (selectionBounds.Contains(e.Location))
+				{
+					Picture.Cursor = Cursors.SizeAll;
+					return;
+				}
+
 				Picture.Cursor = Cursors.Cross;
 			}
 		}
 
 		private void SelectRegion(Point location)
 		{
-			ConstrainLocation(ref location);
+			ConstrainLocation(ref location, imageBounds);
 
 			// do we have an in-bounds start point yet?
 			if (!imageBounds.Contains(startPoint))
@@ -310,7 +335,7 @@ namespace Cropper
 
 		private void ResizeRegion(Point location)
 		{
-			ConstrainLocation(ref location);
+			ConstrainLocation(ref location, imageBounds);
 
 			switch (currentHandle.Position)
 			{
@@ -354,27 +379,68 @@ namespace Cropper
 			Picture.Refresh();
 		}
 
-		private void ConstrainLocation(ref Point location)
+		private void MoveRegion(Point location)
+		{
+			var s = new Point(startPoint.X, startPoint.Y);
+			s.Offset(location.X - movePoint.X, location.Y - movePoint.Y);
+
+			if (!imageBounds.Contains(s))
+			{
+				movePoint = location;
+				ConstrainLocation(ref movePoint, selectionBounds);
+				return;
+			}
+
+			var e = new Point(endPoint.X, endPoint.Y);
+			e.Offset(location.X - movePoint.X, location.Y - movePoint.Y);
+
+			if (!imageBounds.Contains(e))
+			{
+				movePoint = location;
+				ConstrainLocation(ref movePoint, selectionBounds);
+				return;
+			}
+
+			startPoint.X = s.X;
+			startPoint.Y = s.Y;
+
+			endPoint.X = e.X;
+			endPoint.Y = e.Y;
+
+			selectionBounds = new Rectangle(
+				Math.Min(startPoint.X, endPoint.X),
+				Math.Min(startPoint.Y, endPoint.Y),
+				Math.Abs(startPoint.X - endPoint.X),
+				Math.Abs(startPoint.Y - endPoint.Y)
+				);
+
+			SetSelection(selectionBounds);
+			Picture.Refresh();
+
+			movePoint = location;
+		}
+
+		private void ConstrainLocation(ref Point location, Rectangle bounds)
 		{
 			if (!imageBounds.Contains(location))
 			{
 				// force it into bounds
-				if (location.X < imageBounds.Left)
+				if (location.X < bounds.Left)
 				{
-					location.X = imageBounds.Left;
+					location.X = bounds.Left;
 				}
-				else if (location.X > imageBounds.Right)
+				else if (location.X > bounds.Right)
 				{
-					location.X = imageBounds.Right;
+					location.X = bounds.Right;
 				}
 
-				if (location.Y < imageBounds.Top)
+				if (location.Y < bounds.Top)
 				{
-					location.Y = imageBounds.Top;
+					location.Y = bounds.Top;
 				}
-				else if (location.Y > imageBounds.Bottom)
+				else if (location.Y > bounds.Bottom)
 				{
-					location.Y = imageBounds.Bottom;
+					location.Y = bounds.Bottom;
 				}
 			}
 		}
@@ -418,6 +484,36 @@ namespace Cropper
 		{
 			antOffset--;
 			antOffset %= 6;
+			Picture.Refresh();
+		}
+
+		private void CropButton_Click(object sender, EventArgs e)
+		{
+			if (selectionBounds.IsEmpty)
+			{
+				return;
+			}
+
+			var crop = new Bitmap(selectionBounds.Width, selectionBounds.Height);
+			using (var g = Graphics.FromImage(crop))
+			{
+				g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+				g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+				g.CompositingQuality = CompositingQuality.HighQuality;
+
+				g.DrawImage(image, 0, 0, selectionBounds, GraphicsUnit.Pixel);
+
+				image = crop;
+			}
+
+			moveState = MoveState.None;
+
+			SetSelection(Rectangle.Empty);
+			startPoint.X = startPoint.Y = -1;
+			selectionBounds = Rectangle.Empty;
+			handles.Clear();
+			AntTimer.Stop();
+
 			Picture.Refresh();
 		}
 	}
