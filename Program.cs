@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Forms;
+﻿//************************************************************************************************
+// Copyright © 2020 Steven M Cohn.  All rights reserved.
+//************************************************************************************************
 
 namespace Cropper
 {
+    using System;
+    using System.Windows.Forms;
+
+
     static class Program
     {
         /// <summary>
@@ -15,7 +18,7 @@ namespace Cropper
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Screen());
+            Application.Run(new MainWindow());
         }
     }
 }

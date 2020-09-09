@@ -1,17 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Windows.Forms;
-
-
-//https://www.codeproject.com/articles/27748/marching-ants
+﻿//************************************************************************************************
+// Copyright © 2020 Steven M Cohn.  All rights reserved.
+//************************************************************************************************
+// based on https://www.codeproject.com/articles/27748/marching-ants
 
 
 namespace Cropper
 {
-	public partial class Screen : Form
+	using System;
+	using System.Collections.Generic;
+	using System.Drawing;
+	using System.Drawing.Drawing2D;
+	using System.Windows.Forms;
+
+
+	/// <summary>
+	/// Accepts an image, lets the user create a single crop region,
+	/// and crops the image to that region
+	/// </summary>
+	public partial class ImageCropDialog : Form
 	{
+
+		#region Supporting classes
+
+		// tracks the current function, state of the cursor
 		private enum MoveState
 		{
 			None,
@@ -19,36 +30,51 @@ namespace Cropper
 			Moving,
 			Sizing
 		}
-		private enum HandlePosition
+
+
+		// identifies each of the resize handles around the region
+		private enum SizingHandle
 		{
 			TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left
 		}
+
+
+		// hover boundary around each resize handle (larger than handle glyph itself)
 		private class SelectionHandle
 		{
-			public HandlePosition Position;
+			public SizingHandle Position;
 			public RectangleF Bounds;
 		}
 
-		private const int ImageTop = 8;
-		private const int ImageLeft = 8;
+		#endregion Supporting classes
 
+
+		// visual margin around image, provides room for cursor to select edges
+		private const int ImageMargin = 8;
+
+		// the selection
 		private Point startPoint;
 		private Point endPoint;
 		private Point movePoint;
 		private Rectangle selectionBounds;
+		private int antOffset;
 		private readonly Region selectionRegion;
 		private readonly GraphicsPath selectionPath;
-		private readonly Image background;
 
-		private Image image;
+		// the original image
 		private Rectangle imageBounds;
 		private SelectionHandle currentHandle;
 		private readonly List<SelectionHandle> handles;
+		private readonly int brightness;
 
-		private int antOffset;
+		// the current cursor function
 		private MoveState moveState;
 
-		public Screen()
+
+		/// <summary>
+		/// Initialize a new dialog with defaults
+		/// </summary>
+		public ImageCropDialog()
 		{
 			InitializeComponent();
 
@@ -57,60 +83,86 @@ namespace Cropper
 			selectionPath = new GraphicsPath();
 			selectionPath.Reset();
 
-			pictureBox.Image = background = new Bitmap(pictureBox.Width, pictureBox.Height);
+			pictureBox.Image = new Bitmap(pictureBox.Width, pictureBox.Height);
 
 			handles = new List<SelectionHandle>();
 			moveState = MoveState.None;
-
-			// temp
-			LoadImage(@"C:\Github\OneMore\Screenshots\CodeBox.jpg");
 		}
 
-		private void LoadImage_Click(object sender, EventArgs e)
-		{
-			var dialog = new OpenFileDialog();
-			if (dialog.ShowDialog() == DialogResult.OK)
-			{
-				LoadImage(dialog.FileName);
-			}
-		}
 
-		private void LoadImage(string filename)
+		/// <summary>
+		/// Initialize a new dialog showing the given image
+		/// </summary>
+		/// <param name="image">An image to display and crop</param>
+		public ImageCropDialog(Image image) : this()
 		{
-			image = Image.FromFile(filename);
-			imageBounds = new Rectangle(ImageLeft, ImageTop, image.Width, image.Height);
+			this.Image = image;
+
+			imageBounds = new Rectangle(ImageMargin, ImageMargin, image.Width, image.Height);
 
 			picturePanel.AutoScrollMinSize =
-				new Size(imageBounds.Width + (ImageLeft * 2), imageBounds.Height + (ImageTop * 2));
+				new Size(imageBounds.Width + (ImageMargin * 2), imageBounds.Height + (ImageMargin * 2));
 
+			brightness = GetBrightness((Bitmap)image);
 			sizeStatusLabel.Text = $"Image size: {imageBounds.Width} x {imageBounds.Height}.";
 			pictureBox.Refresh();
 		}
 
-		#region Paint
+
+		private void Picture_Hover(object sender, EventArgs e)
+		{
+			pictureBox.Focus();
+		}
+
+
+		private void MarchingTimer_Tick(object sender, EventArgs e)
+		{
+			antOffset--;
+			antOffset %= 6;
+			pictureBox.Refresh();
+		}
+
+
+		/// <summary>
+		/// Gets the cropped image, to be used after dialog closes with DialogResult.OK
+		/// </summary>
+		public Image Image { get; private set; }
+
+
+		// ------------------------------------------------------------------------------------------------------
+		// Paint
+
 		private void Picture_Paint(object sender, PaintEventArgs e)
 		{
 			handles.Clear();
 
-			e.Graphics.DrawImageUnscaled(background, 0, 0);
-
-			if (image != null)
+			// fill picturebox with checkerboard
+			using (var brush = new HatchBrush(HatchStyle.LargeCheckerBoard, Color.DarkGray, Color.Gray))
 			{
-				e.Graphics.DrawImageUnscaled(image, ImageLeft, ImageTop);
+				e.Graphics.FillRectangle(brush, 0, 0, pictureBox.Width, pictureBox.Height);
+			}
+
+			if (Image != null)
+			{
+				// draw outline for images with transparency (png)
+				e.Graphics.DrawRectangle(Pens.Gray, imageBounds);
+				// draw image
+				e.Graphics.DrawImageUnscaled(Image, ImageMargin, ImageMargin);
 			}
 
 			if (selectionRegion.IsEmpty(e.Graphics))
 			{
-				statusLabel.Text = string.Empty;
+				statusLabel.Text = "No selection";
 				return;
 			}
 
+			// fill inner field of selected region
 			using (var fill = new SolidBrush(Color.FromArgb(40, 0, 138, 244)))
 			{
-				// fill for selecting region
 				e.Graphics.FillRegion(fill, selectionRegion);
 			}
 
+			// draw marching ants outline
 			using (var pen = new Pen(Color.White, 1f))
 			{
 				pen.DashStyle = DashStyle.Dash;
@@ -141,28 +193,32 @@ namespace Cropper
 					e.Graphics.DrawImageUnscaled(ant, 0, 0);
 				}
 
+				// draw resize handles
+
 				var bounds = selectionRegion.GetBounds(e.Graphics);
 
-				AddHandle(HandlePosition.TopLeft, bounds.Left, bounds.Top, e.Graphics);
-				AddHandle(HandlePosition.TopRight, bounds.Right, bounds.Top, e.Graphics);
-				AddHandle(HandlePosition.BottomRight, bounds.Right, bounds.Bottom, e.Graphics);
-				AddHandle(HandlePosition.BottomLeft, bounds.Left, bounds.Bottom, e.Graphics);
+				AddHandle(SizingHandle.TopLeft, bounds.Left, bounds.Top, e.Graphics);
+				AddHandle(SizingHandle.TopRight, bounds.Right, bounds.Top, e.Graphics);
+				AddHandle(SizingHandle.BottomRight, bounds.Right, bounds.Bottom, e.Graphics);
+				AddHandle(SizingHandle.BottomLeft, bounds.Left, bounds.Bottom, e.Graphics);
 
-				AddHandle(HandlePosition.Top, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Top, e.Graphics);
-				AddHandle(HandlePosition.Right, bounds.Right, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), e.Graphics);
-				AddHandle(HandlePosition.Bottom, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Bottom, e.Graphics);
-				AddHandle(HandlePosition.Left, bounds.Left, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), e.Graphics);
+				AddHandle(SizingHandle.Top, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Top, e.Graphics);
+				AddHandle(SizingHandle.Right, bounds.Right, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), e.Graphics);
+				AddHandle(SizingHandle.Bottom, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Bottom, e.Graphics);
+				AddHandle(SizingHandle.Left, bounds.Left, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), e.Graphics);
 			}
 
 			statusLabel.Text =
-				$"Selection top left: {selectionBounds.X - ImageLeft}, {selectionBounds.Y - ImageTop}. " +
+				$"Selection top left: {selectionBounds.X - ImageMargin}, {selectionBounds.Y - ImageMargin}. " +
 				$"Bounding rectangle size: {selectionBounds.Width} x {selectionBounds.Height}.";
 		}
 
-		private void AddHandle(HandlePosition position, float x, float y, Graphics g)
+
+		private void AddHandle(SizingHandle position, float x, float y, Graphics g)
 		{
 			var rectangle = new RectangleF(x - 3, y - 3, 6, 6);
-			g.DrawArc(Pens.Black, rectangle.Left, rectangle.Top, 6, 6, 0, 360);
+			var pen = brightness < 50 ? Pens.LightGray : Pens.Black;
+			g.DrawArc(pen, rectangle.Left, rectangle.Top, 6, 6, 0, 360);
 
 			rectangle.Inflate(6, 6);
 			handles.Add(new SelectionHandle
@@ -171,6 +227,7 @@ namespace Cropper
 				Bounds = rectangle
 			});
 		}
+
 
 		private void SetSelection(Rectangle rectangle)
 		{
@@ -184,7 +241,8 @@ namespace Cropper
 			}
 		}
 
-		public GraphicsPath MakeOutlinePath()
+
+		private GraphicsPath MakeOutlinePath()
 		{
 			var path = new GraphicsPath();
 			if (selectionPath.PointCount > 0)
@@ -194,11 +252,32 @@ namespace Cropper
 			}
 			return path;
 		}
-		#endregion Paint
+
+
+		private int GetBrightness(Bitmap image)
+		{
+			// the average brightness of the entire image (0=black, 100=white)
+			float brightness = 0;
+
+			for (int i = 0; i < image.Size.Width; i++)
+			{
+				for (int j = 0; j < image.Size.Height; j++)
+				{
+					var color = image.GetPixel(i, j);
+					brightness += color.GetBrightness();
+				}
+			}
+
+			return (int)(brightness / (image.Size.Width * image.Size.Height) * 100);
+		}
+
+
+		// ------------------------------------------------------------------------------------------------------
+		// Mouse down
 
 		private void Picture_MouseDown(object sender, MouseEventArgs e)
 		{
-			if (image == null)
+			if (Image == null)
 			{
 				return;
 			}
@@ -208,26 +287,26 @@ namespace Cropper
 			{
 				switch (currentHandle.Position)
 				{
-					case HandlePosition.Top:
-					case HandlePosition.Left:
-					case HandlePosition.TopLeft:
+					case SizingHandle.Top:
+					case SizingHandle.Left:
+					case SizingHandle.TopLeft:
 						startPoint.X = selectionBounds.Right;
 						startPoint.Y = selectionBounds.Bottom;
 						break;
 
-					case HandlePosition.TopRight:
+					case SizingHandle.TopRight:
 						startPoint.X = selectionBounds.Left;
 						startPoint.Y = selectionBounds.Bottom;
 						break;
 
-					case HandlePosition.BottomLeft:
+					case SizingHandle.BottomLeft:
 						startPoint.X = selectionBounds.Right;
 						startPoint.Y = selectionBounds.Top;
 						break;
 
-					case HandlePosition.Bottom:
-					case HandlePosition.Right:
-					case HandlePosition.BottomRight:
+					case SizingHandle.Bottom:
+					case SizingHandle.Right:
+					case SizingHandle.BottomRight:
 						startPoint.X = selectionBounds.Left;
 						startPoint.Y = selectionBounds.Top;
 						break;
@@ -267,6 +346,7 @@ namespace Cropper
 			moveState = MoveState.Selecting;
 		}
 
+
 		private SelectionHandle HitHandle(Point location)
 		{
 			foreach (var handle in handles)
@@ -279,6 +359,10 @@ namespace Cropper
 
 			return null;
 		}
+
+
+		// ------------------------------------------------------------------------------------------------------
+		// Mouse move
 
 		private void Picture_MouseMove(object sender, MouseEventArgs e)
 		{
@@ -301,24 +385,24 @@ namespace Cropper
 				{
 					switch (handle.Position)
 					{
-						case HandlePosition.Left:
-						case HandlePosition.Right:
+						case SizingHandle.Left:
+						case SizingHandle.Right:
 							pictureBox.Cursor = Cursors.SizeWE;
 							break;
 
-						case HandlePosition.Top:
-						case HandlePosition.Bottom:
+						case SizingHandle.Top:
+						case SizingHandle.Bottom:
 							pictureBox.Cursor = Cursors.SizeNS;
 							break;
 
-						case HandlePosition.TopLeft:
-						case HandlePosition.BottomRight:
+						case SizingHandle.TopLeft:
+						case SizingHandle.BottomRight:
 							pictureBox.Cursor = Cursors.SizeNWSE;
 							break;
 
 
-						case HandlePosition.TopRight:
-						case HandlePosition.BottomLeft:
+						case SizingHandle.TopRight:
+						case SizingHandle.BottomLeft:
 							pictureBox.Cursor = Cursors.SizeNESW;
 							break;
 					}
@@ -334,6 +418,7 @@ namespace Cropper
 				pictureBox.Cursor = Cursors.Cross;
 			}
 		}
+
 
 		private void SelectRegion(Point location)
 		{
@@ -361,36 +446,37 @@ namespace Cropper
 			pictureBox.Refresh();
 		}
 
+
 		private void ResizeRegion(Point location)
 		{
 			ConstrainLocation(ref location, imageBounds);
 
 			switch (currentHandle.Position)
 			{
-				case HandlePosition.Top:
+				case SizingHandle.Top:
 					endPoint.X = selectionBounds.Left;
 					endPoint.Y = location.Y;
 					break;
 
-				case HandlePosition.Right:
+				case SizingHandle.Right:
 					endPoint.X = location.X;
 					endPoint.Y = selectionBounds.Bottom;
 					break;
 
-				case HandlePosition.Bottom:
+				case SizingHandle.Bottom:
 					endPoint.X = selectionBounds.Right;
 					endPoint.Y = location.Y;
 					break;
 
-				case HandlePosition.Left:
+				case SizingHandle.Left:
 					endPoint.X = location.X;
 					endPoint.Y = selectionBounds.Top;
 					break;
 
-				case HandlePosition.TopLeft:
-				case HandlePosition.TopRight:
-				case HandlePosition.BottomLeft:
-				case HandlePosition.BottomRight:
+				case SizingHandle.TopLeft:
+				case SizingHandle.TopRight:
+				case SizingHandle.BottomLeft:
+				case SizingHandle.BottomRight:
 					endPoint.X = location.X;
 					endPoint.Y = location.Y;
 					break;
@@ -406,6 +492,7 @@ namespace Cropper
 			SetSelection(selectionBounds);
 			pictureBox.Refresh();
 		}
+
 
 		private void MoveRegion(Point location)
 		{
@@ -448,6 +535,7 @@ namespace Cropper
 			movePoint = location;
 		}
 
+
 		private void ConstrainLocation(ref Point location, Rectangle bounds)
 		{
 			if (!imageBounds.Contains(location))
@@ -473,9 +561,13 @@ namespace Cropper
 			}
 		}
 
+
+		// ------------------------------------------------------------------------------------------------------
+		// Mouse up
+
 		private void Picture_MouseUp(object sender, MouseEventArgs e)
 		{
-			if (image == null)
+			if (Image == null)
 			{
 				return;
 			}
@@ -508,12 +600,9 @@ namespace Cropper
 			moveState = MoveState.None;
 		}
 
-		private void MarchingTimer_Tick(object sender, EventArgs e)
-		{
-			antOffset--;
-			antOffset %= 6;
-			pictureBox.Refresh();
-		}
+
+		// ------------------------------------------------------------------------------------------------------
+		// Buttons
 
 		private void CropButton_Click(object sender, EventArgs e)
 		{
@@ -529,11 +618,11 @@ namespace Cropper
 				g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 				g.CompositingQuality = CompositingQuality.HighQuality;
 
-				selectionBounds.Offset(-ImageLeft, -ImageTop);
+				selectionBounds.Offset(-ImageMargin, -ImageMargin);
 
-				g.DrawImage(image, 0, 0, selectionBounds, GraphicsUnit.Pixel);
+				g.DrawImage(Image, 0, 0, selectionBounds, GraphicsUnit.Pixel);
 
-				image = crop;
+				Image = crop;
 			}
 
 			moveState = MoveState.None;
@@ -547,9 +636,10 @@ namespace Cropper
 			pictureBox.Refresh();
 		}
 
-		private void Picture_Hover(object sender, EventArgs e)
+
+		private void CancelButton_Click(object sender, EventArgs e)
 		{
-			pictureBox.Focus();
+			DialogResult = DialogResult.Cancel;
 		}
 	}
 }
