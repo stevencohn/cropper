@@ -80,7 +80,7 @@ namespace Cropper
 			image = Image.FromFile(filename);
 			imageBounds = new Rectangle(ImageLeft, ImageTop, image.Width, image.Height);
 
-			picturePanel.AutoScrollMinSize = 
+			picturePanel.AutoScrollMinSize =
 				new Size(imageBounds.Width + (ImageLeft * 2), imageBounds.Height + (ImageTop * 2));
 
 			sizeStatusLabel.Text = $"Image size: {imageBounds.Width} x {imageBounds.Height}.";
@@ -154,7 +154,7 @@ namespace Cropper
 				AddHandle(HandlePosition.Left, bounds.Left, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), e.Graphics);
 			}
 
-			statusLabel.Text = 
+			statusLabel.Text =
 				$"Selection top left: {selectionBounds.X - ImageLeft}, {selectionBounds.Y - ImageTop}. " +
 				$"Bounding rectangle size: {selectionBounds.Width} x {selectionBounds.Height}.";
 		}
@@ -351,11 +351,11 @@ namespace Cropper
 			endPoint.Y = location.Y;
 
 			selectionBounds = new Rectangle(
-					Math.Min(startPoint.X, endPoint.X),
-					Math.Min(startPoint.Y, endPoint.Y),
-					Math.Abs(startPoint.X - endPoint.X),
-					Math.Abs(startPoint.Y - endPoint.Y)
-					);
+				Math.Min(startPoint.X, endPoint.X),
+				Math.Min(startPoint.Y, endPoint.Y),
+				Math.Abs(startPoint.X - endPoint.X),
+				Math.Abs(startPoint.Y - endPoint.Y)
+				);
 
 			SetSelection(selectionBounds);
 			pictureBox.Refresh();
@@ -397,11 +397,11 @@ namespace Cropper
 			}
 
 			selectionBounds = new Rectangle(
-					Math.Min(startPoint.X, endPoint.X),
-					Math.Min(startPoint.Y, endPoint.Y),
-					Math.Abs(startPoint.X - endPoint.X),
-					Math.Abs(startPoint.Y - endPoint.Y)
-					);
+				Math.Min(startPoint.X, endPoint.X),
+				Math.Min(startPoint.Y, endPoint.Y),
+				Math.Abs(startPoint.X - endPoint.X),
+				Math.Abs(startPoint.Y - endPoint.Y)
+				);
 
 			SetSelection(selectionBounds);
 			pictureBox.Refresh();
