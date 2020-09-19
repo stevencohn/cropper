@@ -11,6 +11,7 @@ namespace Cropper
 	using System.Drawing;
 	using System.Drawing.Drawing2D;
 	using System.Windows.Forms;
+	using SysParams = System.Windows.SystemParameters;
 
 
 	/// <summary>
@@ -52,6 +53,7 @@ namespace Cropper
 		// visual margin around image, provides room for cursor to select edges
 		private const int ImageMargin = 8;
 
+		private const int HandleSize = 8;
 		// the selection
 		private Point startPoint;
 		private Point endPoint;
@@ -60,6 +62,10 @@ namespace Cropper
 		private int antOffset;
 		private readonly Region selectionRegion;
 		private readonly GraphicsPath selectionPath;
+		private readonly float dpiX;
+		private readonly float dpiY;
+		private readonly double scalingX;
+		private readonly double scalingY;
 
 		// the original image
 		private Rectangle imageBounds;
@@ -96,12 +102,24 @@ namespace Cropper
 		/// <param name="image">An image to display and crop</param>
 		public ImageCropDialog(Image image) : this()
 		{
-			this.Image = image;
+			Image = image;
 
-			imageBounds = new Rectangle(ImageMargin, ImageMargin, image.Width, image.Height);
+			(dpiX, dpiY) = UIHelper.GetDpiValues();
+			scalingX = dpiX / image.HorizontalResolution;
+			scalingY = dpiY / image.VerticalResolution;
+			Height = (int)((Math.Min(image.Height * 1.25, SysParams.WorkArea.Height)
+				+ (buttonPanel.Height * 2)) * scalingY);
+			Width = (int)Math.Max(
+				Math.Min(image.Width * 1.5, SysParams.WorkArea.Width) * scalingX,
+				Height);
+			imageBounds = new Rectangle(
+				ImageMargin, ImageMargin,
+				(int)Math.Round(image.Width * scalingX),
+				(int)Math.Round(image.Height * scalingY));
 
-			picturePanel.AutoScrollMinSize =
-				new Size(imageBounds.Width + (ImageMargin * 2), imageBounds.Height + (ImageMargin * 2));
+			picturePanel.AutoScrollMinSize = new Size(
+				imageBounds.Width + (ImageMargin * 2),
+				imageBounds.Height + (ImageMargin * 2));
 
 			brightness = GetBrightness((Bitmap)image);
 			sizeStatusLabel.Text = $"Image size: {imageBounds.Width} x {imageBounds.Height}.";
@@ -211,16 +229,17 @@ namespace Cropper
 			statusLabel.Text =
 				$"Selection top left: {selectionBounds.X - ImageMargin}, {selectionBounds.Y - ImageMargin}. " +
 				$"Bounding rectangle size: {selectionBounds.Width} x {selectionBounds.Height}.";
+			statusStrip.Refresh();
 		}
 
 
 		private void AddHandle(SizingHandle position, float x, float y, Graphics g)
 		{
-			var rectangle = new RectangleF(x - 3, y - 3, 6, 6);
+			var rectangle = new RectangleF(x - (HandleSize / 2), y - (HandleSize / 2), HandleSize, HandleSize);
 			var pen = brightness < 50 ? Pens.LightGray : Pens.Black;
-			g.DrawArc(pen, rectangle.Left, rectangle.Top, 6, 6, 0, 360);
+			g.DrawArc(pen, rectangle.Left, rectangle.Top, HandleSize, HandleSize, 0, 360);
 
-			rectangle.Inflate(6, 6);
+			rectangle.Inflate(HandleSize, HandleSize);
 			handles.Add(new SelectionHandle
 			{
 				Position = position,
@@ -576,8 +595,8 @@ namespace Cropper
 			{
 				if (imageBounds.Contains(e.Location))
 				{
-					endPoint.X = e.X;
-					endPoint.Y = e.Y;
+					endPoint.X = e.Location.X;
+					endPoint.Y = e.Location.Y;
 				}
 
 				selectionBounds = new Rectangle(
@@ -593,6 +612,10 @@ namespace Cropper
 				{
 					marchingTimer.Stop();
 				}
+				else if (!marchingTimer.Enabled)
+				{
+					marchingTimer.Start();
+				}
 
 				pictureBox.Refresh();
 			}
@@ -604,6 +627,18 @@ namespace Cropper
 		// ------------------------------------------------------------------------------------------------------
 		// Buttons
 
+		private void SelectButton_Click(object sender, EventArgs e)
+		{
+			Picture_MouseDown(pictureBox,
+				new MouseEventArgs(MouseButtons.Left, 1, ImageMargin, ImageMargin, 0));
+			var point = new Point(
+				ImageMargin + imageBounds.Width,
+				ImageMargin + imageBounds.Height
+				);
+			SelectRegion(point);
+			Picture_MouseUp(pictureBox,
+				new MouseEventArgs(MouseButtons.Left, 1, point.X, point.Y, 0));
+		}
 		private void CropButton_Click(object sender, EventArgs e)
 		{
 			if (selectionBounds.IsEmpty)
@@ -611,16 +646,27 @@ namespace Cropper
 				return;
 			}
 
-			var crop = new Bitmap(selectionBounds.Width, selectionBounds.Height);
+			var bounds = new Rectangle(
+				(int)Math.Round((selectionBounds.X - ImageMargin) / scalingX),
+				(int)Math.Round((selectionBounds.Y - ImageMargin) / scalingY),
+				(int)Math.Round(selectionBounds.Width / scalingX),
+				(int)Math.Round(selectionBounds.Height / scalingY));
+#if Logging
+			Logger.Current.WriteLine(
+				$"CROP selectionBounds xy:{selectionBounds.X}x{selectionBounds.Y} " +
+				$"siz:{selectionBounds.Width}x{selectionBounds.Height} | " +
+				$"bounds xy:{bounds.X}x{bounds.Y} siz:{bounds.Width}x{bounds.Height}");
+#endif
+			var crop = new Bitmap(bounds.Width, bounds.Height);
+			crop.SetResolution(Image.HorizontalResolution, Image.VerticalResolution);
 			using (var g = Graphics.FromImage(crop))
 			{
 				g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 				g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 				g.CompositingQuality = CompositingQuality.HighQuality;
 
-				selectionBounds.Offset(-ImageMargin, -ImageMargin);
 
-				g.DrawImage(Image, 0, 0, selectionBounds, GraphicsUnit.Pixel);
+				g.DrawImage(Image, 0, 0, bounds, GraphicsUnit.Pixel);
 
 				Image = crop;
 			}
@@ -637,9 +683,5 @@ namespace Cropper
 		}
 
 
-		private void CancelButton_Click(object sender, EventArgs e)
-		{
-			DialogResult = DialogResult.Cancel;
-		}
 	}
 }

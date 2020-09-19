@@ -38,6 +38,7 @@
 			this.statusStrip = new System.Windows.Forms.StatusStrip();
 			this.sizeStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+			this.selectButton = new System.Windows.Forms.Button();
 			((System.ComponentModel.ISupportInitialize)(this.pictureBox)).BeginInit();
 			this.picturePanel.SuspendLayout();
 			this.buttonPanel.SuspendLayout();
@@ -50,9 +51,8 @@
 			this.pictureBox.Cursor = System.Windows.Forms.Cursors.Cross;
 			this.pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.pictureBox.Location = new System.Drawing.Point(0, 0);
-			this.pictureBox.Margin = new System.Windows.Forms.Padding(2);
 			this.pictureBox.Name = "pictureBox";
-			this.pictureBox.Size = new System.Drawing.Size(652, 422);
+			this.pictureBox.Size = new System.Drawing.Size(978, 651);
 			this.pictureBox.TabIndex = 1;
 			this.pictureBox.TabStop = false;
 			this.pictureBox.Paint += new System.Windows.Forms.PaintEventHandler(this.Picture_Paint);
@@ -73,45 +73,41 @@
 			this.picturePanel.AutoSize = true;
 			this.picturePanel.Controls.Add(this.pictureBox);
 			this.picturePanel.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.picturePanel.Location = new System.Drawing.Point(0, 38);
-			this.picturePanel.Margin = new System.Windows.Forms.Padding(2);
+			this.picturePanel.Location = new System.Drawing.Point(0, 58);
 			this.picturePanel.Name = "picturePanel";
-			this.picturePanel.Size = new System.Drawing.Size(652, 422);
+			this.picturePanel.Size = new System.Drawing.Size(978, 651);
 			this.picturePanel.TabIndex = 5;
 			// 
 			// buttonPanel
 			// 
+			this.buttonPanel.Controls.Add(this.selectButton);
 			this.buttonPanel.Controls.Add(this.cancelButton);
 			this.buttonPanel.Controls.Add(this.cropButton);
 			this.buttonPanel.Dock = System.Windows.Forms.DockStyle.Top;
 			this.buttonPanel.Location = new System.Drawing.Point(0, 0);
-			this.buttonPanel.Margin = new System.Windows.Forms.Padding(2);
 			this.buttonPanel.Name = "buttonPanel";
-			this.buttonPanel.Padding = new System.Windows.Forms.Padding(4);
-			this.buttonPanel.Size = new System.Drawing.Size(652, 38);
+			this.buttonPanel.Padding = new System.Windows.Forms.Padding(6, 6, 6, 6);
+			this.buttonPanel.Size = new System.Drawing.Size(978, 58);
 			this.buttonPanel.TabIndex = 6;
 			// 
 			// cancelButton
 			// 
 			this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
 			this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-			this.cancelButton.Location = new System.Drawing.Point(566, 6);
-			this.cancelButton.Margin = new System.Windows.Forms.Padding(2);
+			this.cancelButton.Location = new System.Drawing.Point(849, 9);
 			this.cancelButton.Name = "cancelButton";
-			this.cancelButton.Size = new System.Drawing.Size(80, 26);
+			this.cancelButton.Size = new System.Drawing.Size(120, 40);
 			this.cancelButton.TabIndex = 6;
 			this.cancelButton.Text = "Cancel";
 			this.cancelButton.UseVisualStyleBackColor = true;
-			this.cancelButton.Click += new System.EventHandler(this.CancelButton_Click);
 			// 
 			// cropButton
 			// 
 			this.cropButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
 			this.cropButton.DialogResult = System.Windows.Forms.DialogResult.OK;
-			this.cropButton.Location = new System.Drawing.Point(482, 6);
-			this.cropButton.Margin = new System.Windows.Forms.Padding(2);
+			this.cropButton.Location = new System.Drawing.Point(723, 9);
 			this.cropButton.Name = "cropButton";
-			this.cropButton.Size = new System.Drawing.Size(80, 26);
+			this.cropButton.Size = new System.Drawing.Size(120, 40);
 			this.cropButton.TabIndex = 5;
 			this.cropButton.Text = "Crop";
 			this.cropButton.UseVisualStyleBackColor = true;
@@ -123,10 +119,10 @@
 			this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sizeStatusLabel,
             this.statusLabel});
-			this.statusStrip.Location = new System.Drawing.Point(0, 460);
+			this.statusStrip.Location = new System.Drawing.Point(0, 709);
 			this.statusStrip.Name = "statusStrip";
-			this.statusStrip.Padding = new System.Windows.Forms.Padding(1, 0, 9, 0);
-			this.statusStrip.Size = new System.Drawing.Size(652, 24);
+			this.statusStrip.Padding = new System.Windows.Forms.Padding(2, 0, 14, 0);
+			this.statusStrip.Size = new System.Drawing.Size(978, 36);
 			this.statusStrip.TabIndex = 7;
 			// 
 			// sizeStatusLabel
@@ -134,30 +130,42 @@
 			this.sizeStatusLabel.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
 			this.sizeStatusLabel.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
 			this.sizeStatusLabel.Name = "sizeStatusLabel";
-			this.sizeStatusLabel.Size = new System.Drawing.Size(117, 19);
+			this.sizeStatusLabel.Size = new System.Drawing.Size(181, 29);
 			this.sizeStatusLabel.Text = "Image size: 100x100.";
 			// 
 			// statusLabel
 			// 
 			this.statusLabel.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
 			this.statusLabel.Name = "statusLabel";
-			this.statusLabel.Size = new System.Drawing.Size(369, 19);
+			this.statusLabel.Size = new System.Drawing.Size(543, 29);
 			this.statusLabel.Text = "Selection top left: {x}, {y}. Bounding rectangle size: {width} x {height}.";
 			this.statusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
+			// selectButton
+			// 
+			this.selectButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.selectButton.Location = new System.Drawing.Point(12, 9);
+			this.selectButton.Name = "selectButton";
+			this.selectButton.Size = new System.Drawing.Size(120, 40);
+			this.selectButton.TabIndex = 7;
+			this.selectButton.Text = "Select All";
+			this.selectButton.UseVisualStyleBackColor = true;
+			this.selectButton.Click += new System.EventHandler(this.SelectButton_Click);
 			// 
 			// ImageCropDialog
 			// 
 			this.AcceptButton = this.cropButton;
-			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+			this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.CancelButton = this.cancelButton;
-			this.ClientSize = new System.Drawing.Size(652, 484);
+			this.ClientSize = new System.Drawing.Size(978, 745);
 			this.Controls.Add(this.picturePanel);
 			this.Controls.Add(this.statusStrip);
 			this.Controls.Add(this.buttonPanel);
+			this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
-			this.MinimumSize = new System.Drawing.Size(500, 400);
+			this.MinimumSize = new System.Drawing.Size(739, 585);
 			this.Name = "ImageCropDialog";
 			this.ShowInTaskbar = false;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
@@ -183,6 +191,7 @@
 		private System.Windows.Forms.ToolStripStatusLabel statusLabel;
 		private System.Windows.Forms.ToolStripStatusLabel sizeStatusLabel;
 		private System.Windows.Forms.Button cancelButton;
+		private System.Windows.Forms.Button selectButton;
 	}
 }
 
