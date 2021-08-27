@@ -219,6 +219,9 @@ namespace Cropper
 					}
 					else
 					{
+						endPoint.X = (int)right;
+						endPoint.Y = (int)bottom;
+
 						SetSelection(new Rectangle(
 							(int)bounds.X, (int)bounds.Y,
 							(int)(right - bounds.X),
@@ -242,23 +245,13 @@ namespace Cropper
 				e.Graphics.FillRectangle(brush, 0, 0, pictureBox.Width, pictureBox.Height);
 			}
 
-			if (Image != null)
+			if (Image == null)
 			{
-				// zoom image into viewable area
-				var ratio = Math.Max(
-					Image.Width / (Math.Min(Math.Round(Image.Width * scalingX), pictureBox.Width) - ImageMargin * 2),
-					Image.Height / (Math.Min(Math.Round(Image.Height * scalingY), pictureBox.Height) - ImageMargin * 2));
-
-				imageBounds = new Rectangle(
-					ImageMargin, ImageMargin,
-					(int)Math.Round(Image.Width / ratio),
-					(int)Math.Round(Image.Height / ratio));
-
-				// draw outline for images with transparency (png)
-				e.Graphics.DrawRectangle(Pens.Gray, imageBounds);
-				// draw image
-				e.Graphics.DrawImage(Image, imageBounds);
+				statusLabel.Text = "No image";
+				return;
 			}
+
+			PaintImage(e.Graphics);
 
 			if (selectionRegion.IsEmpty(e.Graphics))
 			{
@@ -266,18 +259,40 @@ namespace Cropper
 				return;
 			}
 
-			//var sb = selectionRegion.GetBounds(e.Graphics);
-			//SetSelection(new Rectangle(
-			//	(int)Math.Round(sb.X * ratio),
-			//	(int)Math.Round(sb.Y * ratio),
-			//	(int)Math.Round(sb.Width * ratio),
-			//	(int)Math.Round(sb.Height * ratio)
-			//	));
+			PaintSelection(e.Graphics);
 
+			statusLabel.Text =
+				$"Selection top left: {selectionBounds.X - ImageMargin}, {selectionBounds.Y - ImageMargin}. " +
+				$"Bounding rectangle size: {selectionBounds.Width} x {selectionBounds.Height}.";
+			statusStrip.Refresh();
+		}
+
+
+		private void PaintImage(Graphics g)
+		{
+			// zoom image into viewable area
+			var ratio = Math.Max(
+				Image.Width / (Math.Min(Math.Round(Image.Width * scalingX), pictureBox.Width) - ImageMargin * 2),
+				Image.Height / (Math.Min(Math.Round(Image.Height * scalingY), pictureBox.Height) - ImageMargin * 2));
+
+			imageBounds = new Rectangle(
+				ImageMargin, ImageMargin,
+				(int)Math.Round(Image.Width / ratio),
+				(int)Math.Round(Image.Height / ratio));
+
+			// draw outline for images with transparency (png)
+			g.DrawRectangle(Pens.Gray, imageBounds);
+			// draw image
+			g.DrawImage(Image, imageBounds);
+		}
+
+
+		private void PaintSelection(Graphics g)
+		{
 			// fill inner field of selected region with transparent blue
 			using (var fill = new SolidBrush(Color.FromArgb(40, 0, 138, 244)))
 			{
-				e.Graphics.FillRegion(fill, selectionRegion);
+				g.FillRegion(fill, selectionRegion);
 			}
 
 			// draw marching ants outline
@@ -290,45 +305,40 @@ namespace Cropper
 				// set up pen for the ants
 				using (var ant = new Bitmap(pictureBox.Width, pictureBox.Height))
 				{
-					using (var g = Graphics.FromImage(ant))
+					using (var gi = Graphics.FromImage(ant))
 					{
 						// region is magenta but we'll use that as our transparent color
-						g.Clear(Color.Magenta);
+						gi.Clear(Color.Magenta);
 
 						using (var outline = MakeOutlinePath())
 						{
-							g.DrawPath(Pens.Black, outline);
-							g.DrawPath(pen, outline);
+							gi.DrawPath(Pens.Black, outline);
+							gi.DrawPath(pen, outline);
 						}
 
-						g.FillRegion(Brushes.Magenta, selectionRegion);
+						gi.FillRegion(Brushes.Magenta, selectionRegion);
 					}
 
 					// make center of ant region transparent
 					ant.MakeTransparent(Color.Magenta);
 
 					// draw the ants on the image
-					e.Graphics.DrawImageUnscaled(ant, 0, 0);
+					g.DrawImageUnscaled(ant, 0, 0);
 				}
 
 				// draw resize handles
-				var bounds = selectionRegion.GetBounds(e.Graphics);
+				var bounds = selectionRegion.GetBounds(g);
 
-				AddHandle(SizingHandle.TopLeft, bounds.Left, bounds.Top, e.Graphics);
-				AddHandle(SizingHandle.TopRight, bounds.Right, bounds.Top, e.Graphics);
-				AddHandle(SizingHandle.BottomRight, bounds.Right, bounds.Bottom, e.Graphics);
-				AddHandle(SizingHandle.BottomLeft, bounds.Left, bounds.Bottom, e.Graphics);
+				AddHandle(SizingHandle.TopLeft, bounds.Left, bounds.Top, g);
+				AddHandle(SizingHandle.TopRight, bounds.Right, bounds.Top, g);
+				AddHandle(SizingHandle.BottomRight, bounds.Right, bounds.Bottom, g);
+				AddHandle(SizingHandle.BottomLeft, bounds.Left, bounds.Bottom, g);
 
-				AddHandle(SizingHandle.Top, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Top, e.Graphics);
-				AddHandle(SizingHandle.Right, bounds.Right, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), e.Graphics);
-				AddHandle(SizingHandle.Bottom, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Bottom, e.Graphics);
-				AddHandle(SizingHandle.Left, bounds.Left, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), e.Graphics);
+				AddHandle(SizingHandle.Top, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Top, g);
+				AddHandle(SizingHandle.Right, bounds.Right, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), g);
+				AddHandle(SizingHandle.Bottom, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Bottom, g);
+				AddHandle(SizingHandle.Left, bounds.Left, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), g);
 			}
-
-			statusLabel.Text =
-				$"Selection top left: {selectionBounds.X - ImageMargin}, {selectionBounds.Y - ImageMargin}. " +
-				$"Bounding rectangle size: {selectionBounds.Width} x {selectionBounds.Height}.";
-			statusStrip.Refresh();
 		}
 
 
