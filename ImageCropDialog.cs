@@ -8,6 +8,7 @@ namespace Cropper
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Diagnostics;
 	using System.Drawing;
 	using System.Drawing.Drawing2D;
 	using System.Windows.Forms;
@@ -215,6 +216,7 @@ namespace Cropper
 					if (right <= bounds.Left || bottom <= bounds.Top)
 					{
 						SetSelection(Rectangle.Empty);
+						cropButton.Enabled = false;
 					}
 					else
 					{
@@ -226,6 +228,8 @@ namespace Cropper
 							(int)(right - bounds.X),
 							(int)(bottom - bounds.Y)
 							));
+
+						cropButton.Enabled = selectionBounds.Width > 0 && selectionBounds.Height > 0;
 					}
 				}
 			}
@@ -270,19 +274,27 @@ namespace Cropper
 		private void PaintImage(Graphics g)
 		{
 			// zoom image into viewable area
-			var ratio = Math.Max(
-				Image.Width / (Math.Min(Math.Round(Image.Width * scalingX), pictureBox.Width) - ImageMargin * 2),
-				Image.Height / (Math.Min(Math.Round(Image.Height * scalingY), pictureBox.Height) - ImageMargin * 2));
-
+			var ratio = MagicRatio();
 			imageBounds = new Rectangle(
 				ImageMargin, ImageMargin,
-				(int)Math.Round(Image.Width / ratio),
-				(int)Math.Round(Image.Height / ratio));
+				(int)Math.Round(Image.Width / ratio), (int)Math.Round(Image.Height / ratio));
 
 			// draw outline for images with transparency (png)
 			g.DrawRectangle(Pens.Gray, imageBounds);
 			// draw image
 			g.DrawImage(Image, imageBounds);
+		}
+
+
+		private double MagicRatio()
+		{
+			// return the larger ratio, horizontal or vertical of the image
+			return Math.Max(
+				// min of scaled image width or pictureBox width without margins
+				Image.Width / (Math.Min(Math.Round(Image.Width * scalingX), pictureBox.Width - ImageMargin * 2)),
+				// min of scaled image height or pictureBox height without margins
+				Image.Height / (Math.Min(Math.Round(Image.Height * scalingY), pictureBox.Height - ImageMargin * 2))
+				);
 		}
 
 
@@ -388,6 +400,7 @@ namespace Cropper
 		{
 			if (Image == null)
 			{
+				Trace.WriteLine("MouseDown empty image");
 				return;
 			}
 
@@ -422,6 +435,7 @@ namespace Cropper
 				}
 
 				moveState = MoveState.Sizing;
+				Trace.WriteLine("MouseDown sizing");
 				return;
 			}
 
@@ -429,6 +443,7 @@ namespace Cropper
 			{
 				movePoint = e.Location;
 				moveState = MoveState.Moving;
+				Trace.WriteLine("MouseDown moving");
 				return;
 			}
 
@@ -453,6 +468,7 @@ namespace Cropper
 			}
 
 			moveState = MoveState.Selecting;
+			Trace.WriteLine("MouseDown selecting");
 		}
 
 
@@ -478,14 +494,17 @@ namespace Cropper
 			if (moveState == MoveState.Selecting)
 			{
 				SelectRegion(e.Location);
+				Trace.WriteLine("MouseMove selecting");
 			}
 			else if (moveState == MoveState.Sizing)
 			{
 				ResizeRegion(e.Location);
+				Trace.WriteLine("MouseMove sizing");
 			}
 			else if (moveState == MoveState.Moving)
 			{
 				MoveRegion(e.Location);
+				Trace.WriteLine("MouseMove moving");
 			}
 			else
 			{
@@ -525,6 +544,7 @@ namespace Cropper
 				}
 
 				pictureBox.Cursor = Cursors.Cross;
+				Trace.WriteLine("MouseeMove -");
 			}
 		}
 
@@ -678,6 +698,7 @@ namespace Cropper
 		{
 			if (Image == null)
 			{
+				Trace.WriteLine("MouseUp empty image");
 				return;
 			}
 
@@ -708,6 +729,15 @@ namespace Cropper
 				}
 
 				pictureBox.Refresh();
+
+				cropButton.Enabled = selectionBounds.Width > 0 && selectionBounds.Height > 0;
+
+				Trace.WriteLine(
+					$"MouseUp selecting, empty:{selectionBounds.IsEmpty} {selectionBounds.Width}x{selectionBounds.Height}");
+			}
+			else
+			{
+				Trace.WriteLine("MouseUp -");
 			}
 
 			moveState = MoveState.None;
@@ -739,15 +769,12 @@ namespace Cropper
 			}
 
 			// translate absolute selection bounds relative to zoomed image bounds
-			var ratio = Math.Max(
-				(Math.Min(Math.Round(Image.Width * scalingX), pictureBox.Width) - ImageMargin * 2) / Image.Width,
-				(Math.Min(Math.Round(Image.Height * scalingY), pictureBox.Height) - ImageMargin * 2) / Image.Height);
-
+			var ratio = MagicRatio();
 			var bounds = new Rectangle(
-				(int)Math.Round((selectionBounds.X - ImageMargin) / ratio),
-				(int)Math.Round((selectionBounds.Y - ImageMargin) / ratio),
-				(int)Math.Round(selectionBounds.Width / ratio),
-				(int)Math.Round(selectionBounds.Height / ratio));
+				(int)Math.Round((selectionBounds.X - ImageMargin) * ratio),
+				(int)Math.Round((selectionBounds.Y - ImageMargin) * ratio),
+				(int)Math.Round(selectionBounds.Width * ratio),
+				(int)Math.Round(selectionBounds.Height * ratio));
 #if Logging
 			Logger.Current.WriteLine(
 				$"CROP selectionBounds xy:{selectionBounds.X}x{selectionBounds.Y} " +

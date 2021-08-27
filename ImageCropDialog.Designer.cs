@@ -116,6 +116,7 @@
 			// 
 			this.cropButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
 			this.cropButton.DialogResult = System.Windows.Forms.DialogResult.OK;
+			this.cropButton.Enabled = false;
 			this.cropButton.Location = new System.Drawing.Point(329, 9);
 			this.cropButton.Name = "cropButton";
 			this.cropButton.Size = new System.Drawing.Size(120, 40);
