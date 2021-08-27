@@ -20,6 +20,11 @@ namespace Cropper
 	/// </summary>
 	public partial class ImageCropDialog : Form
 	{
+		static class Resx
+		{
+			public const string CropImageDialog_bounds = "Selection top left: {0}, {1}. Bounding rectangle size: {2} x {3}.";
+			public const string CropImageDialog_imageSize = "Image size: {0} x {1}";
+		}
 
 		#region Supporting classes
 
@@ -53,7 +58,9 @@ namespace Cropper
 		// visual margin around image, provides room for cursor to select edges
 		private const int ImageMargin = 8;
 
+		// diameter of selection handles
 		private const int HandleSize = 8;
+
 		// the selection
 		private Point startPoint;
 		private Point endPoint;
@@ -114,7 +121,9 @@ namespace Cropper
 
 			brightness = GetBrightness(image);
 
-			sizeStatusLabel.Text = $"Image size: {imageBounds.Width} x {imageBounds.Height}.";
+			sizeStatusLabel.Text = string.Format(
+				Resx.CropImageDialog_imageSize, imageBounds.Width, imageBounds.Height);
+			
 			pictureBox.Refresh();
 		}
 
@@ -350,6 +359,13 @@ namespace Cropper
 				AddHandle(SizingHandle.Bottom, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Bottom, g);
 				AddHandle(SizingHandle.Left, bounds.Left, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), g);
 			}
+
+			statusLabel.Text = string.Format(Resx.CropImageDialog_bounds,
+				selectionBounds.X - ImageMargin, selectionBounds.Y - ImageMargin,
+				selectionBounds.Width, selectionBounds.Height
+				);
+
+			statusStrip.Refresh();
 		}
 
 
@@ -359,7 +375,9 @@ namespace Cropper
 			var pen = brightness < 50 ? Pens.LightGray : Pens.Black;
 			g.DrawArc(pen, rectangle.Left, rectangle.Top, HandleSize, HandleSize, 0, 360);
 
+			// make hover region larger than the handle circle itself so it's easier to hit
 			rectangle.Inflate(HandleSize, HandleSize);
+
 			handles.Add(new SelectionHandle
 			{
 				Position = position,
@@ -393,7 +411,7 @@ namespace Cropper
 		}
 
 
-		// ------------------------------------------------------------------------------------------------------
+		// ---------------------------------------------------------------------------------------
 		// Mouse down
 
 		private void Picture_MouseDown(object sender, MouseEventArgs e)
@@ -486,7 +504,7 @@ namespace Cropper
 		}
 
 
-		// ------------------------------------------------------------------------------------------------------
+		// ---------------------------------------------------------------------------------------
 		// Mouse move
 
 		private void Picture_MouseMove(object sender, MouseEventArgs e)
@@ -691,7 +709,7 @@ namespace Cropper
 		}
 
 
-		// ------------------------------------------------------------------------------------------------------
+		// ---------------------------------------------------------------------------------------
 		// Mouse up
 
 		private void Picture_MouseUp(object sender, MouseEventArgs e)
@@ -744,18 +762,21 @@ namespace Cropper
 		}
 
 
-		// ------------------------------------------------------------------------------------------------------
+		// ---------------------------------------------------------------------------------------
 		// Buttons
 
 		private void SelectButton_Click(object sender, EventArgs e)
 		{
 			Picture_MouseDown(pictureBox,
 				new MouseEventArgs(MouseButtons.Left, 1, ImageMargin, ImageMargin, 0));
+
 			var point = new Point(
 				ImageMargin + imageBounds.Width,
 				ImageMargin + imageBounds.Height
 				);
+
 			SelectRegion(point);
+
 			Picture_MouseUp(pictureBox,
 				new MouseEventArgs(MouseButtons.Left, 1, point.X, point.Y, 0));
 		}
@@ -784,12 +805,12 @@ namespace Cropper
 			// crop with translated bounds
 			var crop = new Bitmap(bounds.Width, bounds.Height);
 			crop.SetResolution(Image.HorizontalResolution, Image.VerticalResolution);
+
 			using (var g = Graphics.FromImage(crop))
 			{
 				g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 				g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 				g.CompositingQuality = CompositingQuality.HighQuality;
-
 				g.DrawImage(Image, 0, 0, bounds, GraphicsUnit.Pixel);
 
 				Image = crop;

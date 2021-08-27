@@ -15,6 +15,8 @@
         {
             if (disposing && (components != null))
             {
+				selectionRegion?.Dispose();
+				selectionPath?.Dispose();
                 components.Dispose();
             }
             base.Dispose(disposing);
@@ -69,7 +71,6 @@
 			// 
 			// picturePanel
 			// 
-			this.picturePanel.AutoScroll = true;
 			this.picturePanel.AutoScrollMinSize = new System.Drawing.Size(300, 300);
 			this.picturePanel.AutoSize = true;
 			this.picturePanel.Controls.Add(this.pictureBox);
