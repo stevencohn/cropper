@@ -203,6 +203,31 @@ namespace Cropper
 
 		private void pictureBox_SizeChanged(object sender, EventArgs e)
 		{
+			var g = pictureBox.CreateGraphics();
+			if (selectionRegion != null && !selectionRegion.IsEmpty(g))
+			{
+				var bounds = selectionRegion.GetBounds(g);
+
+				if (bounds.Right > imageBounds.Right || bounds.Bottom > imageBounds.Bottom)
+				{
+					var right = Math.Min(bounds.Right, imageBounds.Right);
+					var bottom = Math.Min(bounds.Bottom, imageBounds.Bottom);
+
+					if (right <= bounds.Left || bottom <= bounds.Top)
+					{
+						SetSelection(Rectangle.Empty);
+					}
+					else
+					{
+						SetSelection(new Rectangle(
+							(int)bounds.X, (int)bounds.Y,
+							(int)(right - bounds.X),
+							(int)(bottom - bounds.Y)
+							));
+					}
+				}
+			}
+
 			pictureBox.Refresh();
 		}
 
