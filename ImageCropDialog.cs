@@ -11,7 +11,6 @@ namespace Cropper
 	using System.Drawing;
 	using System.Drawing.Drawing2D;
 	using System.Windows.Forms;
-	using SysParams = System.Windows.SystemParameters;
 
 
 	/// <summary>
