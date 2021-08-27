@@ -704,17 +704,23 @@ namespace Cropper
 				return;
 			}
 
+			// translate absolute selection bounds relative to zoomed image bounds
+			var ratio = Math.Max(
+				(Math.Min(Math.Round(Image.Width * scalingX), pictureBox.Width) - ImageMargin * 2) / Image.Width,
+				(Math.Min(Math.Round(Image.Height * scalingY), pictureBox.Height) - ImageMargin * 2) / Image.Height);
+
 			var bounds = new Rectangle(
-				(int)Math.Round((selectionBounds.X - ImageMargin) / scalingX),
-				(int)Math.Round((selectionBounds.Y - ImageMargin) / scalingY),
-				(int)Math.Round(selectionBounds.Width / scalingX),
-				(int)Math.Round(selectionBounds.Height / scalingY));
+				(int)Math.Round((selectionBounds.X - ImageMargin) / ratio),
+				(int)Math.Round((selectionBounds.Y - ImageMargin) / ratio),
+				(int)Math.Round(selectionBounds.Width / ratio),
+				(int)Math.Round(selectionBounds.Height / ratio));
 #if Logging
 			Logger.Current.WriteLine(
 				$"CROP selectionBounds xy:{selectionBounds.X}x{selectionBounds.Y} " +
 				$"siz:{selectionBounds.Width}x{selectionBounds.Height} | " +
 				$"bounds xy:{bounds.X}x{bounds.Y} siz:{bounds.Width}x{bounds.Height}");
 #endif
+			// crop with translated bounds
 			var crop = new Bitmap(bounds.Width, bounds.Height);
 			crop.SetResolution(Image.HorizontalResolution, Image.VerticalResolution);
 			using (var g = Graphics.FromImage(crop))
@@ -722,7 +728,6 @@ namespace Cropper
 				g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 				g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 				g.CompositingQuality = CompositingQuality.HighQuality;
-
 
 				g.DrawImage(Image, 0, 0, bounds, GraphicsUnit.Pixel);
 
