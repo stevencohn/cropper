@@ -77,6 +77,8 @@ namespace Cropper
 		private MoveState moveState;
 
 
+		#region Lifecycle
+
 		/// <summary>
 		/// Initialize a new dialog with defaults
 		/// </summary>
@@ -89,8 +91,6 @@ namespace Cropper
 			selectionPath = new GraphicsPath();
 			selectionPath.Reset();
 
-			pictureBox.Image = new Bitmap(pictureBox.Width, pictureBox.Height);
-
 			handles = new List<SelectionHandle>();
 			moveState = MoveState.None;
 		}
@@ -100,32 +100,92 @@ namespace Cropper
 		/// Initialize a new dialog showing the given image
 		/// </summary>
 		/// <param name="image">An image to display and crop</param>
-		public ImageCropDialog(Image image) : this()
+		public ImageCropDialog(Image image)
+			: this()
 		{
 			Image = image;
 
+			// set scaling factors
 			(dpiX, dpiY) = UIHelper.GetDpiValues();
 			scalingX = dpiX / image.HorizontalResolution;
 			scalingY = dpiY / image.VerticalResolution;
-			Height = (int)((Math.Min(image.Height * 1.25, SysParams.WorkArea.Height)
-				+ (buttonPanel.Height * 2)) * scalingY);
-			Width = (int)Math.Max(
-				Math.Min(image.Width * 1.5, SysParams.WorkArea.Width) * scalingX,
-				Height);
-			imageBounds = new Rectangle(
-				ImageMargin, ImageMargin,
-				(int)Math.Round(image.Width * scalingX),
-				(int)Math.Round(image.Height * scalingY));
 
-			picturePanel.AutoScrollMinSize = new Size(
-				imageBounds.Width + (ImageMargin * 2),
-				imageBounds.Height + (ImageMargin * 2));
+			SizeWindow();
 
-			brightness = GetBrightness((Bitmap)image);
+			brightness = GetBrightness(image);
+
 			sizeStatusLabel.Text = $"Image size: {imageBounds.Width} x {imageBounds.Height}.";
 			pictureBox.Refresh();
 		}
 
+
+		private void SizeWindow()
+		{
+			// height
+			var border =
+				SystemInformation.CaptionHeight +				// title bar
+				SystemInformation.FrameBorderSize.Height * 2 +	// horizontal borders, top/bottom
+				statusStrip.Height +							// status bar
+				buttonPanel.Height;
+
+			var desired = Math.Max(
+				MinimumSize.Height,								// defined min size of dialog
+				Image.Height + border + ImageMargin * 2);		// image + borders + margins
+
+			Height = Math.Min(desired, Screen.FromControl(this).WorkingArea.Height);
+
+			// width
+			border =
+				SystemInformation.FrameBorderSize.Width * 2;	// vertical borders, left/right
+
+			desired = Math.Max(
+				MinimumSize.Width,								// defined min size of dialog
+				Image.Width + border + ImageMargin * 2);		// image + borders + margins
+
+			Width = Math.Min(desired, Screen.FromControl(this).WorkingArea.Width);
+		}
+
+
+		private int GetBrightness(Image image)
+		{
+			if (image is Bitmap bitmap)
+			{
+				try
+				{
+					// the average brightness of the entire image (0=black, 100=white)
+					float brightnessValue = 0;
+
+					for (int i = 0; i < bitmap.Size.Width; i++)
+					{
+						for (int j = 0; j < bitmap.Size.Height; j++)
+						{
+							var color = bitmap.GetPixel(i, j);
+							brightnessValue += color.GetBrightness();
+						}
+					}
+
+					return (int)(brightnessValue / (bitmap.Size.Width * bitmap.Size.Height) * 100);
+				}
+				catch
+				{
+					return 100;
+				}
+			}
+
+			return 100;
+		}
+
+		#endregion Lifecycle
+
+
+		/// <summary>
+		/// Gets the cropped image, to be used after dialog closes with DialogResult.OK
+		/// </summary>
+		public Image Image { get; private set; }
+
+
+		// ------------------------------------------------------------------------------------------------------
+		// Paint
 
 		private void Picture_Hover(object sender, EventArgs e)
 		{
@@ -141,14 +201,11 @@ namespace Cropper
 		}
 
 
-		/// <summary>
-		/// Gets the cropped image, to be used after dialog closes with DialogResult.OK
-		/// </summary>
-		public Image Image { get; private set; }
+		private void pictureBox_SizeChanged(object sender, EventArgs e)
+		{
+			pictureBox.Refresh();
+		}
 
-
-		// ------------------------------------------------------------------------------------------------------
-		// Paint
 
 		private void Picture_Paint(object sender, PaintEventArgs e)
 		{
@@ -162,10 +219,20 @@ namespace Cropper
 
 			if (Image != null)
 			{
+				// zoom image into viewable area
+				var ratio = Math.Max(
+					Image.Width / (Math.Min(Math.Round(Image.Width * scalingX), pictureBox.Width) - ImageMargin * 2),
+					Image.Height / (Math.Min(Math.Round(Image.Height * scalingY), pictureBox.Height) - ImageMargin * 2));
+
+				imageBounds = new Rectangle(
+					ImageMargin, ImageMargin,
+					(int)Math.Round(Image.Width / ratio),
+					(int)Math.Round(Image.Height / ratio));
+
 				// draw outline for images with transparency (png)
 				e.Graphics.DrawRectangle(Pens.Gray, imageBounds);
 				// draw image
-				e.Graphics.DrawImageUnscaled(Image, ImageMargin, ImageMargin);
+				e.Graphics.DrawImage(Image, imageBounds);
 			}
 
 			if (selectionRegion.IsEmpty(e.Graphics))
@@ -174,7 +241,15 @@ namespace Cropper
 				return;
 			}
 
-			// fill inner field of selected region
+			//var sb = selectionRegion.GetBounds(e.Graphics);
+			//SetSelection(new Rectangle(
+			//	(int)Math.Round(sb.X * ratio),
+			//	(int)Math.Round(sb.Y * ratio),
+			//	(int)Math.Round(sb.Width * ratio),
+			//	(int)Math.Round(sb.Height * ratio)
+			//	));
+
+			// fill inner field of selected region with transparent blue
 			using (var fill = new SolidBrush(Color.FromArgb(40, 0, 138, 244)))
 			{
 				e.Graphics.FillRegion(fill, selectionRegion);
@@ -212,7 +287,6 @@ namespace Cropper
 				}
 
 				// draw resize handles
-
 				var bounds = selectionRegion.GetBounds(e.Graphics);
 
 				AddHandle(SizingHandle.TopLeft, bounds.Left, bounds.Top, e.Graphics);
@@ -270,24 +344,6 @@ namespace Cropper
 				path.Widen(Pens.White);
 			}
 			return path;
-		}
-
-
-		private int GetBrightness(Bitmap image)
-		{
-			// the average brightness of the entire image (0=black, 100=white)
-			float brightness = 0;
-
-			for (int i = 0; i < image.Size.Width; i++)
-			{
-				for (int j = 0; j < image.Size.Height; j++)
-				{
-					var color = image.GetPixel(i, j);
-					brightness += color.GetBrightness();
-				}
-			}
-
-			return (int)(brightness / (image.Size.Width * image.Size.Height) * 100);
 		}
 
 
@@ -639,6 +695,8 @@ namespace Cropper
 			Picture_MouseUp(pictureBox,
 				new MouseEventArgs(MouseButtons.Left, 1, point.X, point.Y, 0));
 		}
+
+
 		private void CropButton_Click(object sender, EventArgs e)
 		{
 			if (selectionBounds.IsEmpty)
@@ -681,7 +739,5 @@ namespace Cropper
 
 			pictureBox.Refresh();
 		}
-
-
 	}
 }

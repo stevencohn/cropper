@@ -6,6 +6,8 @@ namespace Cropper
 {
 	using System;
 	using System.Drawing;
+	using System.IO;
+	using System.Reflection;
 	using System.Windows.Forms;
 
 
@@ -27,18 +29,30 @@ namespace Cropper
 
 		private void openButton_Click(object sender, EventArgs e)
 		{
-			CropImage(@"\Github\OneMore\Screenshots\CodeBox.jpg");
+			var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			CropImage(Path.Combine(path, "Lion.jpg"));
 		}
 
 
 		private void CropImage(string filename)
 		{
 			var image = Image.FromFile(filename);
+			DialogResult result;
 
 			using (var dialog = new ImageCropDialog(image))
 			{
-				if (dialog.ShowDialog(this) == DialogResult.OK)
+				result = dialog.ShowDialog(this);
+				if (result == DialogResult.OK)
 				{
+					image = dialog.Image;
+				}
+			}
+
+			if (result == DialogResult.OK)
+			{
+				using (var dialog = new ImageCropDialog(image))
+				{
+					dialog.ShowDialog(this);
 				}
 			}
 		}
