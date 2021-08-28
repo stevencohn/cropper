@@ -64,11 +64,11 @@
     <Compile Include="MainWindow.Designer.cs">
       <DependentUpon>MainWindow.cs</DependentUpon>
     </Compile>
-    <Compile Include="ImageCropDialog.cs">
+    <Compile Include="CropImageDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ImageCropDialog.Designer.cs">
-      <DependentUpon>ImageCropDialog.cs</DependentUpon>
+    <Compile Include="CropImageDialog.Designer.cs">
+      <DependentUpon>CropImageDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -81,8 +81,8 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="ImageCropDialog.resx">
-      <DependentUpon>ImageCropDialog.cs</DependentUpon>
+    <EmbeddedResource Include="CropImageDialog.resx">
+      <DependentUpon>CropImageDialog.cs</DependentUpon>
     </EmbeddedResource>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>

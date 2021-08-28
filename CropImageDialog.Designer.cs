@@ -1,6 +1,6 @@
 ﻿namespace Cropper
 {
-    partial class ImageCropDialog
+    partial class CropImageDialog
     {
         /// <summary>
         /// Required designer variable.

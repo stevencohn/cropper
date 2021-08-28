@@ -18,7 +18,7 @@ namespace Cropper
 	/// Accepts an image, lets the user create a single crop region,
 	/// and crops the image to that region
 	/// </summary>
-	public partial class ImageCropDialog : Form
+	public partial class CropImageDialog : Form
 	{
 		static class Resx
 		{
@@ -89,7 +89,7 @@ namespace Cropper
 		/// <summary>
 		/// Initialize a new dialog with defaults
 		/// </summary>
-		public ImageCropDialog()
+		public CropImageDialog()
 		{
 			InitializeComponent();
 
@@ -107,7 +107,7 @@ namespace Cropper
 		/// Initialize a new dialog showing the given image
 		/// </summary>
 		/// <param name="image">An image to display and crop</param>
-		public ImageCropDialog(Image image)
+		public CropImageDialog(Image image)
 			: this()
 		{
 			Image = image;

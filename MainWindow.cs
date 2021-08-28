@@ -39,7 +39,7 @@ namespace Cropper
 			var image = Image.FromFile(filename);
 			DialogResult result;
 
-			using (var dialog = new ImageCropDialog(image))
+			using (var dialog = new CropImageDialog(image))
 			{
 				result = dialog.ShowDialog(this);
 				if (result == DialogResult.OK)
@@ -50,7 +50,7 @@ namespace Cropper
 
 			if (result == DialogResult.OK)
 			{
-				using (var dialog = new ImageCropDialog(image))
+				using (var dialog = new CropImageDialog(image))
 				{
 					dialog.ShowDialog(this);
 				}
