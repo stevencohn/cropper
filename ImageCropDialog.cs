@@ -122,7 +122,7 @@ namespace Cropper
 			brightness = GetBrightness(image);
 
 			sizeStatusLabel.Text = string.Format(
-				Resx.CropImageDialog_imageSize, imageBounds.Width, imageBounds.Height);
+				Resx.CropImageDialog_imageSize, Image.Width, Image.Height);
 			
 			pictureBox.Refresh();
 		}
@@ -272,11 +272,7 @@ namespace Cropper
 			}
 
 			PaintSelection(e.Graphics);
-
-			statusLabel.Text =
-				$"Selection top left: {selectionBounds.X - ImageMargin}, {selectionBounds.Y - ImageMargin}. " +
-				$"Bounding rectangle size: {selectionBounds.Width} x {selectionBounds.Height}.";
-			statusStrip.Refresh();
+			UpdateStatus();
 		}
 
 
@@ -359,12 +355,21 @@ namespace Cropper
 				AddHandle(SizingHandle.Bottom, bounds.Left + ((bounds.Right - bounds.Left) / 2), bounds.Bottom, g);
 				AddHandle(SizingHandle.Left, bounds.Left, bounds.Top + ((bounds.Bottom - bounds.Top) / 2), g);
 			}
+		}
 
-			statusLabel.Text = string.Format(Resx.CropImageDialog_bounds,
-				selectionBounds.X - ImageMargin, selectionBounds.Y - ImageMargin,
-				selectionBounds.Width, selectionBounds.Height
+
+		private void UpdateStatus()
+		{
+			var ratio = MagicRatio();
+			var r = new Rectangle(
+				(int)((selectionBounds.X - ImageMargin) * ratio),
+				(int)((selectionBounds.Y - ImageMargin) * ratio),
+				(int)(selectionBounds.Width * ratio),
+				(int)(selectionBounds.Height * ratio)
 				);
 
+			statusLabel.Text = string.Format(Resx.CropImageDialog_bounds, r.X, r.Y, r.Width, r.Height);
+			statusStrip.Invalidate();
 			statusStrip.Refresh();
 		}
 
